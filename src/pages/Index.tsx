@@ -1,75 +1,43 @@
-import { useState } from 'react';
-import { departments, personnel } from '../data/mockData';
+import { SearchBar } from '../components/SearchBar';
 import { DepartmentCard } from '../components/DepartmentCard';
 import { PersonnelList } from '../components/PersonnelList';
-import { SearchBar } from '../components/SearchBar';
-import { Department } from '../types/directory';
+import { departments, personnel } from '../data/mockData';
+import { Link } from 'react-router-dom';
 
 const Index = () => {
-  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    setSelectedDepartment(null);
-  };
-
-  const filteredPersonnel = personnel.filter((person) => {
-    if (selectedDepartment) {
-      return person.department === selectedDepartment.id;
-    }
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      return (
-        person.name.toLowerCase().includes(query) ||
-        person.extension.includes(query) ||
-        person.role.toLowerCase().includes(query)
-      );
-    }
-    return false;
-  });
-
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold text-gray-900">Directory</h1>
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-blue-500 rounded-full"></div>
+            <h1 className="text-2xl font-bold">Intercom Directory</h1>
+          </div>
+          <Link to="/admin" className="text-blue-500 hover:text-blue-600">
+            Admin Portal
+          </Link>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <SearchBar onSearch={handleSearch} />
+        <SearchBar onSearch={() => {}} />
 
-        {!selectedDepartment && !searchQuery && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {departments.map((department) => (
-              <DepartmentCard
-                key={department.id}
-                department={department}
-                onClick={() => setSelectedDepartment(department)}
-              />
-            ))}
-          </div>
-        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          {departments.map((department) => (
+            <DepartmentCard
+              key={department.id}
+              department={department}
+              onClick={() => {}}
+            />
+          ))}
+        </div>
 
-        {(selectedDepartment || searchQuery) && (
-          <div className="space-y-6">
-            {selectedDepartment && (
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-semibold text-gray-900">
-                  {selectedDepartment.name}
-                </h2>
-                <button
-                  onClick={() => setSelectedDepartment(null)}
-                  className="text-primary hover:text-primary/80"
-                >
-                  Back to Departments
-                </button>
-              </div>
-            )}
-            <PersonnelList personnel={filteredPersonnel} />
+        <div className="bg-white rounded-lg shadow">
+          <div className="px-6 py-4">
+            <h2 className="text-2xl font-bold">All Personnel</h2>
           </div>
-        )}
+          <PersonnelList personnel={personnel} />
+        </div>
       </main>
     </div>
   );

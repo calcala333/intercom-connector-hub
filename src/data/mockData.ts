@@ -1,65 +1,64 @@
 import { Department, Person } from '../types/directory';
-import { Building2, Shield, Wrench, GraduationCap, Trees, Flame } from 'lucide-react';
+import { Shield, Wrench, Building2, Users, Trees, Flame } from 'lucide-react';
 
 export const departments: Department[] = [
   {
     id: '1',
-    name: 'Police Department',
-    description: 'Law enforcement and emergency services',
+    name: 'Police',
+    description: 'Emergency services and public safety',
     icon: 'Shield',
   },
   {
     id: '2',
-    name: 'Public Works',
-    description: 'Infrastructure maintenance and development',
-    icon: 'Wrench',
+    name: 'Fire Department',
+    description: 'Fire prevention and emergency response',
+    icon: 'Flame',
   },
   {
     id: '3',
-    name: 'Village Hall',
-    description: 'Administrative services and governance',
-    icon: 'Building2',
+    name: 'Public Works',
+    description: 'Infrastructure and maintenance services',
+    icon: 'Wrench',
   },
   {
     id: '4',
-    name: 'Community Development',
-    description: 'Planning and development services',
-    icon: 'GraduationCap',
+    name: 'Village Hall',
+    description: 'Administrative services and community management',
+    icon: 'Building2',
   },
   {
     id: '5',
-    name: 'Parks and Recreation',
-    description: 'Parks maintenance and recreational programs',
-    icon: 'Trees',
+    name: 'Community Development',
+    description: 'Planning and development services',
+    icon: 'Users',
   },
   {
     id: '6',
-    name: 'Fire',
-    description: 'Fire prevention and emergency response',
-    icon: 'Flame',
+    name: 'Parks & Recreation',
+    description: 'Recreational facilities and programs',
+    icon: 'Trees',
   },
 ];
 
 export const personnel: Person[] = [
   {
     id: '1',
-    name: 'John Smith',
-    role: 'Chief of Police',
-    extension: '101',
-    email: 'john.smith@police.gov',
-    department: '1',
+    name: 'John Doe',
+    role: 'Police Chief',
+    extension: '123-456-7890',
+    email: 'john.doe@police.gov',
+    department: 'Police',
     status: 'active',
   },
   {
     id: '2',
-    name: 'Jane Doe',
+    name: 'Jane Smith',
     role: 'Public Works Director',
-    extension: '201',
-    email: 'jane.doe@publicworks.gov',
-    department: '2',
+    extension: '123-456-7891',
+    email: 'jane.smith@publicworks.gov',
+    department: 'Public Works',
     status: 'active',
   },
-  // Add more mock data as needed
 ];
 
 export const getIconComponent = (iconName: string) => {
@@ -67,7 +66,7 @@ export const getIconComponent = (iconName: string) => {
     Shield,
     Wrench,
     Building2,
-    GraduationCap,
+    Users,
     Trees,
     Flame,
   };
