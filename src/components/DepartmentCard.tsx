@@ -5,19 +5,28 @@ import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/ca
 interface DepartmentCardProps {
   department: Department;
   onClick: () => void;
+  isSelected?: boolean;
 }
 
-export const DepartmentCard = ({ department, onClick }: DepartmentCardProps) => {
+export const DepartmentCard = ({ department, onClick, isSelected = false }: DepartmentCardProps) => {
   const IconComponent = getIconComponent(department.icon);
 
   return (
     <Card 
-      className="cursor-pointer hover:shadow-lg transition-shadow duration-200"
+      className={`cursor-pointer transition-all duration-200 ${
+        isSelected 
+          ? 'ring-2 ring-blue-500 shadow-lg transform scale-[1.02]' 
+          : 'hover:shadow-lg hover:scale-[1.01]'
+      }`}
       onClick={onClick}
     >
       <CardHeader className="flex flex-row items-start gap-4">
-        <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center">
-          {IconComponent && <IconComponent className="w-6 h-6 text-blue-500" />}
+        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+          isSelected ? 'bg-blue-100' : 'bg-blue-50'
+        }`}>
+          {IconComponent && <IconComponent className={`w-6 h-6 ${
+            isSelected ? 'text-blue-600' : 'text-blue-500'
+          }`} />}
         </div>
         <div>
           <CardTitle className="text-xl mb-1">{department.name}</CardTitle>
