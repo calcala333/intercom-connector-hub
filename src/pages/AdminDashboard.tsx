@@ -2,12 +2,15 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PersonnelList } from '@/components/PersonnelList';
-import { departments, personnel } from '../data/mockData';
+import { departments, personnel as initialPersonnel } from '../data/mockData';
 import { DepartmentCard } from '@/components/DepartmentCard';
+import { AddPersonnelDialog } from '@/components/AddPersonnelDialog';
+import { Person } from '../types/directory';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [personnel, setPersonnel] = useState<Person[]>(initialPersonnel);
 
   useEffect(() => {
     const isLoggedIn = localStorage.getItem('isAdminLoggedIn') === 'true';
@@ -21,6 +24,10 @@ const AdminDashboard = () => {
   const handleLogout = () => {
     localStorage.removeItem('isAdminLoggedIn');
     navigate('/admin');
+  };
+
+  const handlePersonnelAdded = (newPerson: Person) => {
+    setPersonnel((prev) => [...prev, newPerson]);
   };
 
   if (!isAuthenticated) {
@@ -60,7 +67,7 @@ const AdminDashboard = () => {
         <div className="bg-white rounded-lg shadow">
           <div className="px-6 py-4 flex justify-between items-center">
             <h2 className="text-xl font-semibold">Personnel Management</h2>
-            <Button>Add Personnel</Button>
+            <AddPersonnelDialog onPersonnelAdded={handlePersonnelAdded} />
           </div>
           <PersonnelList personnel={personnel} />
         </div>

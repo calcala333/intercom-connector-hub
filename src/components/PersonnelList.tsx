@@ -7,12 +7,28 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Trash2 } from 'lucide-react';
+import { useToast } from '../hooks/use-toast';
 
 interface PersonnelListProps {
   personnel: Person[];
+  onDelete?: (id: string) => void;
 }
 
-export const PersonnelList = ({ personnel }: PersonnelListProps) => {
+export const PersonnelList = ({ personnel, onDelete }: PersonnelListProps) => {
+  const { toast } = useToast();
+
+  const handleDelete = (id: string) => {
+    if (onDelete) {
+      onDelete(id);
+      toast({
+        title: "Success",
+        description: "Personnel deleted successfully",
+      });
+    }
+  };
+
   return (
     <div className="w-full overflow-x-auto">
       <Table>
@@ -23,6 +39,7 @@ export const PersonnelList = ({ personnel }: PersonnelListProps) => {
             <TableHead>EXTENSION</TableHead>
             <TableHead>DEPARTMENT</TableHead>
             <TableHead>STATUS</TableHead>
+            <TableHead>ACTIONS</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -45,6 +62,16 @@ export const PersonnelList = ({ personnel }: PersonnelListProps) => {
                 }`}>
                   {person.status}
                 </span>
+              </TableCell>
+              <TableCell>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDelete(person.id)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </TableCell>
             </TableRow>
           ))}
