@@ -1,69 +1,37 @@
-# Welcome to your Lovable project
 
-## Project info
+# Personnel Directory Application
 
-**URL**: https://lovable.dev/projects/cf5ccb5e-65f8-4582-9f35-80ce2da4f66b
+## Quick Installation
 
-## How can I edit this code?
+To install the application with a single command, run:
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/cf5ccb5e-65f8-4582-9f35-80ce2da4f66b) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+curl -s https://raw.githubusercontent.com/yourusername/personnel-directory/main/install.sh | bash
 ```
 
-**Edit a file directly in GitHub**
+This script will:
+- Update your system
+- Install required dependencies (PostgreSQL, Node.js, Nginx)
+- Set up the database
+- Clone the repository
+- Configure environment variables
+- Build the application
+- Configure the web server
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Manual Installation
 
-**Use GitHub Codespaces**
+For step-by-step manual installation instructions, please refer to [SELF_HOSTING.md](./SELF_HOSTING.md)
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Configuration
 
-## What technologies are used for this project?
+The application uses these environment variables:
+- `VITE_PG_HOST`: PostgreSQL host (default: localhost)
+- `VITE_PG_PORT`: PostgreSQL port (default: 5432)
+- `VITE_PG_DATABASE`: Database name (default: personnel_directory)
+- `VITE_PG_USER`: Database user (default: postgres)
+- `VITE_PG_PASSWORD`: Database password
+- `VITE_PG_SSL`: Enable SSL for database connection (default: false)
 
-This project is built with .
+## Support
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/cf5ccb5e-65f8-4582-9f35-80ce2da4f66b) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+If you encounter any issues, please check the troubleshooting section in [SELF_HOSTING.md](./SELF_HOSTING.md) or open an issue in the repository.
