@@ -16,38 +16,66 @@ SERVER_IP="172.18.3.25"
 
 echo -e "${GREEN}Starting Personnel Directory installation...${NC}"
 
+# Check if running with sudo/root permissions
+if [ "$EUID" -ne 0 ]; then
+    echo -e "${RED}Please run this script with sudo or as root${NC}"
+    echo "Try: sudo ./install.sh"
+    exit 1
+fi
+
 # Update system and install dependencies
 echo -e "${GREEN}Updating system and installing dependencies...${NC}"
-sudo apt update && sudo apt upgrade -y
-sudo apt install -y curl build-essential postgresql postgresql-contrib nginx
+apt update && apt upgrade -y || { echo -e "${RED}Failed to update system packages${NC}"; exit 1; }
+apt install -y curl build-essential postgresql postgresql-contrib nginx git || { echo -e "${RED}Failed to install required packages${NC}"; exit 1; }
 
 # Install NVM and Node.js
 echo -e "${GREEN}Installing Node.js...${NC}"
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-nvm install --lts
-nvm use --lts
+if ! command -v node &> /dev/null; then
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    nvm install --lts
+    nvm use --lts
+else
+    echo "Node.js is already installed"
+fi
 
 # Setup PostgreSQL database
 echo -e "${GREEN}Setting up PostgreSQL database...${NC}"
-sudo systemctl start postgresql
-sudo systemctl enable postgresql
+systemctl start postgresql || { echo -e "${RED}Failed to start PostgreSQL${NC}"; exit 1; }
+systemctl enable postgresql
 
 # Create database and user
-sudo -u postgres psql -c "CREATE DATABASE $DB_NAME;"
-sudo -u postgres psql -c "CREATE USER $DB_USER WITH ENCRYPTED PASSWORD '$DB_PASSWORD';" || true
+sudo -u postgres psql -c "CREATE DATABASE $DB_NAME;" || echo "Database may already exist, continuing..."
+sudo -u postgres psql -c "CREATE USER $DB_USER WITH ENCRYPTED PASSWORD '$DB_PASSWORD';" || echo "User may already exist, continuing..."
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
 
+# Determine installation directory
+INSTALL_DIR="/opt/personnel-directory"
+mkdir -p $INSTALL_DIR
+cd $INSTALL_DIR
+
 # Clone the repository (replace with actual repo URL)
-echo -e "${GREEN}Cloning application repository...${NC}"
-REPO_DIR="$HOME/personnel-directory"
-git clone https://github.com/yourusername/personnel-directory.git $REPO_DIR || (cd $REPO_DIR && git pull)
-cd $REPO_DIR
+echo -e "${GREEN}Setting up application files...${NC}"
+if [ -d "$INSTALL_DIR/.git" ]; then
+    git pull
+else
+    # Replace with your actual repository URL
+    git clone https://github.com/yourusername/personnel-directory.git $INSTALL_DIR || {
+        echo -e "${RED}Failed to clone repository. Using local files if available.${NC}"
+        # If git clone fails, check if we have the necessary files locally
+        if [ ! -f "vite.config.ts" ]; then
+            echo -e "${RED}No repository and no local files. Cannot proceed.${NC}"
+            exit 1
+        fi
+    }
+fi
 
 # Install dependencies
 echo -e "${GREEN}Installing application dependencies...${NC}"
-npm install
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+npm install || { echo -e "${RED}Failed to install npm dependencies${NC}"; exit 1; }
 
 # Create environment file
 echo -e "${GREEN}Creating environment configuration...${NC}"
@@ -62,15 +90,15 @@ EOF
 
 # Build the application
 echo -e "${GREEN}Building the application...${NC}"
-npm run build
+npm run build || { echo -e "${RED}Failed to build application${NC}"; exit 1; }
 
 # Setup Nginx
 echo -e "${GREEN}Setting up Nginx...${NC}"
-sudo tee /etc/nginx/sites-available/personnel-directory > /dev/null << EOF
+cat > /etc/nginx/sites-available/personnel-directory << EOF
 server {
     listen 80;
     server_name $SERVER_IP;
-    root $REPO_DIR/dist;
+    root $INSTALL_DIR/dist;
 
     location / {
         try_files \$uri \$uri/ /index.html;
@@ -87,15 +115,15 @@ server {
 }
 EOF
 
-sudo ln -sf /etc/nginx/sites-available/personnel-directory /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl restart nginx
+ln -sf /etc/nginx/sites-available/personnel-directory /etc/nginx/sites-enabled/
+nginx -t && systemctl restart nginx || { echo -e "${RED}Nginx configuration failed${NC}"; exit 1; }
 
 # Setup firewall if installed
 if command -v ufw > /dev/null; then
     echo -e "${GREEN}Configuring firewall...${NC}"
-    sudo ufw allow 80/tcp
-    sudo ufw allow 443/tcp
-    sudo ufw allow 22/tcp
+    ufw allow 80/tcp
+    ufw allow 443/tcp
+    ufw allow 22/tcp
 fi
 
 echo -e "${GREEN}Installation complete!${NC}"
