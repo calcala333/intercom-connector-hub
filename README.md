@@ -30,15 +30,18 @@ The application uses these environment variables:
 
 If you encounter any issues, please check the troubleshooting section in [SELF_HOSTING.md](./SELF_HOSTING.md) or open an issue in the repository.
 
-## Authentication Error Solution
+## Installation Troubleshooting
 
-If you encounter the "Authentication failed" error during installation:
+### Permission Errors
 
-1. Simply download the installation script directly instead of cloning:
-   ```bash
-   wget -O install.sh https://raw.githubusercontent.com/yourusername/personnel-directory/main/install.sh
-   chmod +x install.sh
-   sudo ./install.sh
-   ```
+If you encounter permission errors:
+1. Make sure you're running the script with sudo: `sudo ./install.sh`
+2. The script will create and set appropriate permissions for all directories
 
-2. The script will set up all necessary files locally without requiring repository access.
+### Database Already Exists
+
+This is not an error - the script will continue and use the existing database.
+
+### NPM Dependency Issues
+
+The script has been updated to handle npm dependency issues more gracefully.

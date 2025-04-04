@@ -45,20 +45,18 @@ echo -e "${GREEN}Setting up PostgreSQL database...${NC}"
 systemctl start postgresql || { echo -e "${RED}Failed to start PostgreSQL${NC}"; exit 1; }
 systemctl enable postgresql
 
-# Create database and user
+# Create database and user - ignoring errors if already exists
 sudo -u postgres psql -c "CREATE DATABASE $DB_NAME;" || echo "Database may already exist, continuing..."
-sudo -u postgres psql -c "CREATE USER $DB_USER WITH ENCRYPTED PASSWORD '$DB_PASSWORD';" || echo "User may already exist, continuing..."
+sudo -u postgres psql -c "ALTER USER $DB_USER WITH ENCRYPTED PASSWORD '$DB_PASSWORD';" || echo "User may already exist, updating password..."
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
 
 # Determine installation directory
 INSTALL_DIR="/opt/personnel-directory"
 mkdir -p $INSTALL_DIR
-cd $INSTALL_DIR
-
-# Skip git clone completely and set up from scratch
-echo -e "${GREEN}Creating application from scratch...${NC}"
+cd $INSTALL_DIR || { echo -e "${RED}Failed to change to installation directory${NC}"; exit 1; }
 
 # Setup basic directory structure
+echo -e "${GREEN}Creating application from scratch...${NC}"
 mkdir -p src/components/ui src/hooks src/lib src/pages src/types src/data public
 
 # Create main configuration files
@@ -136,7 +134,6 @@ cat > package.json << EOF
     "eslint": "^8.56.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
-    "lovable-tagger": "^0.0.3",
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.2.2",
@@ -185,7 +182,6 @@ cat > vite.config.ts << EOF
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -204,10 +200,8 @@ export default defineConfig(({ mode }) => ({
     }
   },
   plugins: [
-    react(),
-    mode === 'development' &&
-    componentTagger(),
-  ].filter(Boolean),
+    react()
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -233,6 +227,17 @@ cat > index.html << EOF
 </html>
 EOF
 
+# Create utility files
+mkdir -p src/lib
+cat > src/lib/utils.ts << EOF
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
+ 
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+EOF
+
 # Create basic documentation
 cat > README.md << EOF
 # Personnel Directory Application
@@ -248,11 +253,193 @@ The application uses these environment variables:
 - \`VITE_PG_SSL\`: Enable SSL for database connection (default: false)
 EOF
 
-# Install dependencies
-echo -e "${GREEN}Installing application dependencies...${NC}"
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-npm install || { echo -e "${RED}Failed to install npm dependencies${NC}"; exit 1; }
+# Create tailwind config
+cat > tailwind.config.ts << EOF
+import { type Config } from "tailwindcss"
+
+export default {
+  darkMode: ["class"],
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    container: {
+      center: true,
+      padding: "2rem",
+      screens: {
+        "2xl": "1400px",
+      },
+    },
+    extend: {
+      colors: {
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+      },
+    },
+  },
+  plugins: [require("tailwindcss-animate")],
+} satisfies Config
+EOF
+
+# Create a basic main.tsx file
+mkdir -p src
+cat > src/main.tsx << EOF
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import App from "./App";
+import "./index.css";
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>
+);
+EOF
+
+# Create a basic App.tsx file
+cat > src/App.tsx << EOF
+import { Routes, Route } from "react-router-dom";
+
+const App = () => {
+  return (
+    <main className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Personnel Directory</h1>
+      <Routes>
+        <Route path="/" element={<div>Welcome to Personnel Directory</div>} />
+      </Routes>
+    </main>
+  );
+};
+
+export default App;
+EOF
+
+# Create a basic CSS file
+cat > src/index.css << EOF
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+EOF
+
+# Create postcss.config.js
+cat > postcss.config.js << EOF
+export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}
+EOF
 
 # Create environment file
 echo -e "${GREEN}Creating environment configuration...${NC}"
@@ -264,6 +451,14 @@ VITE_PG_USER=$DB_USER
 VITE_PG_PASSWORD=$DB_PASSWORD
 VITE_PG_SSL=false
 EOF
+
+# Install dependencies using npm directly (avoid nvm issues)
+echo -e "${GREEN}Installing application dependencies...${NC}"
+npm install || { echo -e "${RED}Failed to install npm dependencies${NC}"; }
+
+# Build the application
+echo -e "${GREEN}Building the application...${NC}"
+npm run build || { echo -e "${RED}Failed to build application${NC}"; }
 
 # Setup Nginx
 echo -e "${GREEN}Setting up Nginx...${NC}"
@@ -299,6 +494,9 @@ if command -v ufw > /dev/null; then
     ufw allow 22/tcp
 fi
 
-echo -e "${GREEN}Installation setup complete!${NC}"
+# Set proper permissions for the installation directory
+chown -R www-data:www-data $INSTALL_DIR
+chmod -R 755 $INSTALL_DIR
+
+echo -e "${GREEN}Installation complete!${NC}"
 echo -e "${GREEN}You can access the application at http://$SERVER_IP${NC}"
-echo -e "${GREEN}Next steps: Complete the application code setup${NC}"
