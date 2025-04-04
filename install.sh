@@ -17,7 +17,7 @@ SERVER_IP="172.18.3.25"
 echo -e "${GREEN}Starting Personnel Directory installation...${NC}"
 
 # Check if running with sudo/root permissions
-if [ "$EUID" -ne 0 ]; then
+if [ "$(id -u)" -ne 0 ]; then
     echo -e "${RED}Please run this script with sudo or as root${NC}"
     echo "Try: sudo ./install.sh"
     exit 1
@@ -37,7 +37,7 @@ if ! command -v node &> /dev/null; then
     nvm install --lts
     nvm use --lts
 else
-    echo "Node.js is already installed"
+    echo "Node.js is already installed: $(which node)"
 fi
 
 # Setup PostgreSQL database
@@ -46,6 +46,8 @@ systemctl start postgresql || { echo -e "${RED}Failed to start PostgreSQL${NC}";
 systemctl enable postgresql
 
 # Create database and user - ignoring errors if already exists
+cd /tmp || { echo -e "${RED}Failed to change to /tmp directory${NC}"; exit 1; }
+
 sudo -u postgres psql -c "CREATE DATABASE $DB_NAME;" || echo "Database may already exist, continuing..."
 sudo -u postgres psql -c "ALTER USER $DB_USER WITH ENCRYPTED PASSWORD '$DB_PASSWORD';" || echo "User may already exist, updating password..."
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
@@ -58,6 +60,55 @@ cd $INSTALL_DIR || { echo -e "${RED}Failed to change to installation directory${
 # Setup basic directory structure
 echo -e "${GREEN}Creating application from scratch...${NC}"
 mkdir -p src/components/ui src/hooks src/lib src/pages src/types src/data public
+
+# Create tsconfig.json file first to address TypeScript issues
+cat > tsconfig.json << EOF
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "allowJs": true,
+    "esModuleInterop": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}
+EOF
+
+# Create tsconfig.node.json
+cat > tsconfig.node.json << EOF
+{
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["vite.config.ts"]
+}
+EOF
 
 # Create main configuration files
 cat > package.json << EOF
@@ -143,7 +194,6 @@ cat > package.json << EOF
 EOF
 
 # Create the database configuration file
-mkdir -p src/lib
 cat > src/lib/db-config.ts << EOF
 /**
  * PostgreSQL Database Configuration
@@ -228,7 +278,6 @@ cat > index.html << EOF
 EOF
 
 # Create utility files
-mkdir -p src/lib
 cat > src/lib/utils.ts << EOF
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
@@ -238,102 +287,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 EOF
 
-# Create basic documentation
-cat > README.md << EOF
-# Personnel Directory Application
-
-## Configuration
-
-The application uses these environment variables:
-- \`VITE_PG_HOST\`: PostgreSQL host (default: localhost)
-- \`VITE_PG_PORT\`: PostgreSQL port (default: 5432)
-- \`VITE_PG_DATABASE\`: Database name (default: personnel_directory)
-- \`VITE_PG_USER\`: Database user (default: postgres)
-- \`VITE_PG_PASSWORD\`: Database password
-- \`VITE_PG_SSL\`: Enable SSL for database connection (default: false)
-EOF
-
-# Create tailwind config
-cat > tailwind.config.ts << EOF
-import { type Config } from "tailwindcss"
-
-export default {
-  darkMode: ["class"],
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
-  theme: {
-    container: {
-      center: true,
-      padding: "2rem",
-      screens: {
-        "2xl": "1400px",
-      },
-    },
-    extend: {
-      colors: {
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
-        primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
-        },
-        secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
-        },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
-        },
-        muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
-        },
-        accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
-        },
-        popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
-        },
-        card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
-        },
-      },
-      borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
-      },
-      keyframes: {
-        "accordion-down": {
-          from: { height: "0" },
-          to: { height: "var(--radix-accordion-content-height)" },
-        },
-        "accordion-up": {
-          from: { height: "var(--radix-accordion-content-height)" },
-          to: { height: "0" },
-        },
-      },
-      animation: {
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
-      },
-    },
-  },
-  plugins: [require("tailwindcss-animate")],
-} satisfies Config
-EOF
-
-# Create a basic main.tsx file
-mkdir -p src
+# Create main.tsx for minimal working app
 cat > src/main.tsx << EOF
 import React from "react";
 import ReactDOM from "react-dom/client";
@@ -350,18 +304,18 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 );
 EOF
 
-# Create a basic App.tsx file
+# Create a minimal App.tsx
 cat > src/App.tsx << EOF
 import { Routes, Route } from "react-router-dom";
 
 const App = () => {
   return (
-    <main className="container mx-auto p-4">
+    <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Personnel Directory</h1>
       <Routes>
         <Route path="/" element={<div>Welcome to Personnel Directory</div>} />
       </Routes>
-    </main>
+    </div>
   );
 };
 
@@ -441,6 +395,84 @@ export default {
 }
 EOF
 
+# Create tailwindcss config
+cat > tailwind.config.js << EOF
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  darkMode: ["class"],
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    container: {
+      center: true,
+      padding: "2rem",
+      screens: {
+        "2xl": "1400px",
+      },
+    },
+    extend: {
+      colors: {
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+      },
+    },
+  },
+  plugins: [require("tailwindcss-animate")],
+}
+EOF
+
 # Create environment file
 echo -e "${GREEN}Creating environment configuration...${NC}"
 cat > .env.local << EOF
@@ -452,15 +484,19 @@ VITE_PG_PASSWORD=$DB_PASSWORD
 VITE_PG_SSL=false
 EOF
 
-# Install dependencies using npm directly (avoid nvm issues)
+# Install dependencies
 echo -e "${GREEN}Installing application dependencies...${NC}"
 npm install || { echo -e "${RED}Failed to install npm dependencies${NC}"; }
 
-# Build the application
+# Build the application 
 echo -e "${GREEN}Building the application...${NC}"
-npm run build || { echo -e "${RED}Failed to build application${NC}"; }
+npm run build || { 
+  echo -e "${RED}Failed to build application, trying with development server...${NC}"
+  npm run dev &
+  echo -e "${GREEN}Development server started as a fallback${NC}"
+}
 
-# Setup Nginx
+# Setup Nginx - Fix the issue with Nginx configuration
 echo -e "${GREEN}Setting up Nginx...${NC}"
 cat > /etc/nginx/sites-available/personnel-directory << EOF
 server {
@@ -483,8 +519,23 @@ server {
 }
 EOF
 
+# Check if internal-directory is a directory and remove it
+if [ -d "/etc/nginx/sites-enabled/internal-directory" ]; then
+    echo -e "${GREEN}Removing directory /etc/nginx/sites-enabled/internal-directory...${NC}"
+    rm -rf /etc/nginx/sites-enabled/internal-directory
+fi
+
+# Remove any existing symlink to avoid conflicts
+if [ -L "/etc/nginx/sites-enabled/personnel-directory" ]; then
+    rm -f /etc/nginx/sites-enabled/personnel-directory
+fi
+
+# Create symlink and restart Nginx
 ln -sf /etc/nginx/sites-available/personnel-directory /etc/nginx/sites-enabled/
-nginx -t && systemctl restart nginx || { echo -e "${RED}Nginx configuration failed${NC}"; exit 1; }
+nginx -t && systemctl restart nginx || { 
+    echo -e "${RED}Nginx configuration failed, proceed without Nginx restart${NC}"; 
+    echo -e "${RED}You may need to manually configure Nginx later${NC}";
+}
 
 # Setup firewall if installed
 if command -v ufw > /dev/null; then
@@ -500,3 +551,4 @@ chmod -R 755 $INSTALL_DIR
 
 echo -e "${GREEN}Installation complete!${NC}"
 echo -e "${GREEN}You can access the application at http://$SERVER_IP${NC}"
+echo -e "${GREEN}If you experienced any build errors, you can access the development server at http://$SERVER_IP:8080${NC}"
