@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 # Colors for better readability
@@ -584,4 +583,3 @@ chmod -R 755 $INSTALL_DIR
 echo -e "${GREEN}Installation complete!${NC}"
 echo -e "${GREEN}You can access the application at http://$SERVER_IP${NC}"
 echo -e "${GREEN}If you experienced any build errors, you can access the development server at http://$SERVER_IP:8080${NC}"
-
