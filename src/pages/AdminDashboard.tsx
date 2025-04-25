@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,9 +7,11 @@ import { departments, personnel as initialPersonnel } from '../data/mockData';
 import { DepartmentCard } from '@/components/DepartmentCard';
 import { AddPersonnelDialog } from '@/components/AddPersonnelDialog';
 import { Person } from '../types/directory';
+import { useToast } from '@/components/ui/use-toast';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [personnel, setPersonnel] = useState<Person[]>(initialPersonnel);
 
@@ -28,6 +31,18 @@ const AdminDashboard = () => {
 
   const handlePersonnelAdded = (newPerson: Person) => {
     setPersonnel((prev) => [...prev, newPerson]);
+    toast({
+      title: "Success",
+      description: "Personnel added successfully",
+    });
+  };
+
+  const handlePersonnelDeleted = (id: string) => {
+    setPersonnel((prev) => prev.filter(person => person.id !== id));
+    toast({
+      title: "Success",
+      description: "Personnel deleted successfully",
+    });
   };
 
   if (!isAuthenticated) {
@@ -69,7 +84,10 @@ const AdminDashboard = () => {
             <h2 className="text-xl font-semibold">Personnel Management</h2>
             <AddPersonnelDialog onPersonnelAdded={handlePersonnelAdded} />
           </div>
-          <PersonnelList personnel={personnel} />
+          <PersonnelList 
+            personnel={personnel} 
+            onDelete={handlePersonnelDeleted} 
+          />
         </div>
       </main>
     </div>

@@ -1,3 +1,4 @@
+
 import { Person } from '../types/directory';
 import {
   Table,
@@ -9,7 +10,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
-import { useToast } from '../hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 
 interface PersonnelListProps {
   personnel: Person[];
@@ -22,10 +23,6 @@ export const PersonnelList = ({ personnel, onDelete }: PersonnelListProps) => {
   const handleDelete = (id: string) => {
     if (onDelete) {
       onDelete(id);
-      toast({
-        title: "Success",
-        description: "Personnel deleted successfully",
-      });
     }
   };
 
@@ -39,7 +36,7 @@ export const PersonnelList = ({ personnel, onDelete }: PersonnelListProps) => {
             <TableHead>EXTENSION</TableHead>
             <TableHead>DEPARTMENT</TableHead>
             <TableHead>STATUS</TableHead>
-            <TableHead>ACTIONS</TableHead>
+            {onDelete && <TableHead>ACTIONS</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -63,16 +60,18 @@ export const PersonnelList = ({ personnel, onDelete }: PersonnelListProps) => {
                   {person.status}
                 </span>
               </TableCell>
-              <TableCell>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDelete(person.id)}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </TableCell>
+              {onDelete && (
+                <TableCell>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(person.id)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>
