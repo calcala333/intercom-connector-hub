@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 # Colors for better readability
@@ -26,6 +27,46 @@ fi
 echo -e "${GREEN}Updating system and installing dependencies...${NC}"
 apt update && apt upgrade -y || { echo -e "${RED}Failed to update system packages${NC}"; }
 apt install -y curl build-essential postgresql postgresql-contrib nginx git || { echo -e "${RED}Failed to install required packages${NC}"; }
+
+# Ensure nginx configuration directory exists
+echo -e "${GREEN}Ensuring Nginx configuration directories exist...${NC}"
+mkdir -p /etc/nginx/sites-available /etc/nginx/sites-enabled
+
+# Create basic nginx.conf if it doesn't exist
+if [ ! -f "/etc/nginx/nginx.conf" ]; then
+    echo -e "${GREEN}Creating base Nginx configuration file...${NC}"
+    cat > /etc/nginx/nginx.conf << EOF
+user www-data;
+worker_processes auto;
+pid /run/nginx.pid;
+include /etc/nginx/modules-enabled/*.conf;
+
+events {
+    worker_connections 768;
+}
+
+http {
+    sendfile on;
+    tcp_nopush on;
+    types_hash_max_size 2048;
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    
+    access_log /var/log/nginx/access.log;
+    error_log /var/log/nginx/error.log;
+    
+    gzip on;
+    
+    include /etc/nginx/conf.d/*.conf;
+    include /etc/nginx/sites-enabled/*;
+}
+EOF
+fi
+
+# Create necessary Nginx directories if they don't exist
+mkdir -p /var/log/nginx
+mkdir -p /etc/nginx/conf.d
+mkdir -p /etc/nginx/modules-enabled
 
 # Install NVM and Node.js
 echo -e "${GREEN}Installing Node.js...${NC}"
@@ -1141,6 +1182,21 @@ npm run build || {
   echo -e "${GREEN}Development server started as a fallback${NC}"
 }
 
+# Open firewall ports if needed
+echo -e "${GREEN}Configuring firewall...${NC}"
+if command -v ufw &> /dev/null; then
+    ufw allow 80/tcp
+    ufw allow 8080/tcp
+    echo -e "${GREEN}Firewall configured to allow ports 80 and 8080${NC}"
+elif command -v firewall-cmd &> /dev/null; then
+    firewall-cmd --permanent --add-port=80/tcp
+    firewall-cmd --permanent --add-port=8080/tcp
+    firewall-cmd --reload
+    echo -e "${GREEN}Firewall configured to allow ports 80 and 8080${NC}"
+else
+    echo -e "${RED}No known firewall management tool found, ports may need to be opened manually${NC}"
+fi
+
 # Fix Nginx config - check and remove internal-directory if it's a directory
 echo -e "${GREEN}Setting up Nginx...${NC}"
 
@@ -1151,6 +1207,7 @@ if [ -d "/etc/nginx/sites-enabled/internal-directory" ]; then
 fi
 
 # Create Nginx configuration
+mkdir -p /etc/nginx/sites-available /etc/nginx/sites-enabled
 cat > /etc/nginx/sites-available/personnel-directory << EOF
 server {
     listen 80;
@@ -1196,7 +1253,17 @@ else
     echo -e "${RED}Nginx configuration failed, check syntax${NC}"
     # More verbose test to see the actual error
     nginx -t
-    echo -e "${RED}Proceeding without Nginx restart${NC}"
+    echo -e "${RED}Starting a basic web server to serve the application${NC}"
+    
+    # Start a simple web server as fallback
+    cd $INSTALL_DIR/dist
+    nohup python3 -m http.server 80 > /dev/null 2>&1 &
+    echo -e "${GREEN}Started Python HTTP server on port 80 as fallback${NC}"
+    
+    # Alternatively, run the Vite dev server
+    cd $INSTALL_DIR
+    nohup npm run dev > /dev/null 2>&1 &
+    echo -e "${GREEN}Started Vite dev server on port 8080 as fallback${NC}"
 fi
 
 # Set proper permissions for the installation directory
@@ -1205,4 +1272,5 @@ chmod -R 755 $INSTALL_DIR
 
 echo -e "${GREEN}Installation complete!${NC}"
 echo -e "${GREEN}You can access the application at http://$SERVER_IP${NC}"
-echo -e "${GREEN}If you experienced any build errors, you can access the development server at http://$SERVER_IP:8080${NC}"
+echo -e "${GREEN}If you experienced any errors, you can access the development server at http://$SERVER_IP:8080${NC}"
+echo -e "${GREEN}Demo login credentials: username 'admin' with password 'password'${NC}"
