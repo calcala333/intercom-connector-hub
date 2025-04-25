@@ -13,9 +13,13 @@ const AdminLogin = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Login attempt with:", username, password);
+    
     // For demo purposes, using hardcoded credentials
     if (username === 'admin' && password === 'admin123') {
+      console.log("Login successful, setting localStorage");
       localStorage.setItem('isAdminLoggedIn', 'true');
+      console.log("Navigating to dashboard");
       navigate('/admin/dashboard');
     } else {
       toast({
@@ -31,6 +35,9 @@ const AdminLogin = () => {
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-lg">
         <div>
           <h2 className="text-center text-3xl font-bold text-gray-900">Admin Login</h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Use admin / admin123 for demo login
+          </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleLogin}>
           <div className="space-y-4">

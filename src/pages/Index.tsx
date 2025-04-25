@@ -48,7 +48,7 @@ const Index = () => {
             className="text-gray-600 hover:text-primary transition-colors flex items-center gap-2 px-4 py-2 rounded-full hover:bg-blue-50"
           >
             <Users className="w-4 h-4" />
-            Admin Portal
+            Admin Sign In
           </Link>
         </div>
       </header>
