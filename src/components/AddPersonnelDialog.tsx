@@ -1,3 +1,5 @@
+
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,6 +28,7 @@ import { useForm } from "react-hook-form";
 import { departments } from "../data/mockData";
 import { Person } from "../types/directory";
 import { useToast } from "../hooks/use-toast";
+import { Plus, User } from "lucide-react";
 
 interface AddPersonnelDialogProps {
   onPersonnelAdded: (newPerson: Person) => void;
@@ -33,6 +36,8 @@ interface AddPersonnelDialogProps {
 
 export const AddPersonnelDialog = ({ onPersonnelAdded }: AddPersonnelDialogProps) => {
   const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  
   const form = useForm({
     defaultValues: {
       name: "",
@@ -56,16 +61,15 @@ export const AddPersonnelDialog = ({ onPersonnelAdded }: AddPersonnelDialogProps
 
     onPersonnelAdded(newPerson);
     form.reset();
-    toast({
-      title: "Success",
-      description: "Personnel added successfully",
-    });
+    setOpen(false);
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Add Personnel</Button>
+        <Button>
+          <Plus className="mr-2 h-4 w-4" /> Add Personnel
+        </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
