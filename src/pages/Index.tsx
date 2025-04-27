@@ -6,7 +6,6 @@ import { PersonnelList } from '../components/PersonnelList';
 import { departments, personnel } from '../data/mockData';
 import { Link } from 'react-router-dom';
 import { Building, Users } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 const Index = () => {
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
